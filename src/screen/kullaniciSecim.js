@@ -1,13 +1,13 @@
-//MERYEM
+//KEVSER
 import { View, Text } from 'react-native'
 import React from 'react'
 
-const mediAi = () => {
+const kullaniciSecim = () => {
   return (
     <View>
-      <Text>mediAi</Text>
+      <Text>kullaniciSecim</Text>
     </View>
   )
 }
 
-export default mediAi
+export default kullaniciSecim
