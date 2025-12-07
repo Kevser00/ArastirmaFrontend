@@ -2,12 +2,12 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-const kayitDr = () => {
+const SifremiUnuttum = () => {
   return (
     <View>
-      <Text>kayitDr</Text>
+      <Text>sifremiUnuttum</Text>
     </View>
   )
 }
 
-export default kayitDr
+export default SifremiUnuttum
