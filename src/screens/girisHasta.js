@@ -1,4 +1,4 @@
-// KEVSER - GirisHasta
+// src/screens/girisHasta.js
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -7,9 +7,12 @@ import {
   Image,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 
 import NavigationFooter from '../components/NavigationFooter';
+import { authService } from '../api/authService';
 
 const GirisHasta = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -17,14 +20,13 @@ const GirisHasta = ({ navigation }) => {
 
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const isValidEmail = (val) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(val.trim());
 
   const isStrongPassword = (val) =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_\-+={}[\]|\\:;"'<>,.?/~`]).{8,}$/.test(
-      val
-    );
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_\-+={}[\]|\\:;"'<>,.?/~`]).{8,}$/.test(val);
 
   const emailError = useMemo(() => {
     if (!emailTouched) return '';
@@ -46,14 +48,38 @@ const GirisHasta = ({ navigation }) => {
     [email, password]
   );
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setEmailTouched(true);
     setPasswordTouched(true);
-
     if (!isFormValid) return;
 
-    console.log('Giriş başarılı');
-    // navigation.navigate('HastaAnasayfa');
+    try {
+      setLoading(true);
+
+      const { data } = await authService.loginUser({
+        email: email.trim(),
+        password,
+      });
+
+      const user = {
+        email: email.trim(),
+        ...(data?.user || {}),
+      };
+
+      // Senin navigasyon yapına göre burayı uyarlarsın:
+      // örn: navigation.replace('HastaStack', { screen: 'HastaTabs', params: { user } });
+      Alert.alert('Başarılı', 'Giriş yapıldı.');
+      // navigation.navigate('hastaAnaSayfa');
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Giriş başarısız.';
+      Alert.alert('Hata', msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,7 +93,6 @@ const GirisHasta = ({ navigation }) => {
       <Text style={styles.title}>Giriş Yap</Text>
 
       <View style={styles.box}>
-        {/* EMAIL */}
         <TextInput
           placeholder="E-posta"
           placeholderTextColor="#888"
@@ -91,7 +116,6 @@ const GirisHasta = ({ navigation }) => {
           </View>
         ) : null}
 
-        {/* PASSWORD */}
         <TextInput
           placeholder="Şifre"
           placeholderTextColor="#888"
@@ -130,10 +154,11 @@ const GirisHasta = ({ navigation }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, !isFormValid && styles.buttonDisabled]}
+          style={[styles.button, (!isFormValid || loading) && styles.buttonDisabled]}
           onPress={handleLogin}
+          disabled={!isFormValid || loading}
         >
-          <Text style={styles.buttonText}>Giriş Yap</Text>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Giriş Yap</Text>}
         </TouchableOpacity>
       </View>
 
@@ -143,23 +168,9 @@ const GirisHasta = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1483C7',
-    alignItems: 'center',
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginTop: 60,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: 'white',
-    marginBottom: 20,
-  },
+  container: { flex: 1, backgroundColor: '#1483C7', alignItems: 'center' },
+  logo: { width: 80, height: 80, marginTop: 60, marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: '600', color: 'white', marginBottom: 20 },
   box: {
     marginTop: 10,
     width: '80%',
@@ -180,9 +191,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  inputError: {
-    borderColor: '#E53935',
-  },
+  inputError: { borderColor: '#E53935' },
   errorBox: {
     backgroundColor: '#FDECEA',
     borderColor: '#E53935',
@@ -191,35 +200,17 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 10,
   },
-  errorText: {
-    color: '#E53935',
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  kaydolText: {
-    color: '#1642BB',
-    fontSize: 13,
-    marginBottom: 5,
-  },
-  sifreUnuttumText: {
-    color: '#1642BB',
-    fontSize: 13,
-    marginBottom: 20,
-  },
+  errorText: { color: '#E53935', fontSize: 12, textAlign: 'center' },
+  kaydolText: { color: '#1642BB', fontSize: 13, marginBottom: 5 },
+  sifreUnuttumText: { color: '#1642BB', fontSize: 13, marginBottom: 20 },
   button: {
     backgroundColor: '#1642BB',
     paddingVertical: 12,
     borderRadius: 25,
     alignItems: 'center',
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 17,
-    fontWeight: '600',
-  },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: 'white', fontSize: 17, fontWeight: '600' },
 });
 
 export default GirisHasta;
