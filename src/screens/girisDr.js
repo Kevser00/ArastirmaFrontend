@@ -10,20 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 
 import NavigationFooter from '../components/NavigationFooter';
-
-//  Şimdilik mock login (sonra API ile değiştir)
-const loginDoctor = async ({ sicilNo, sifre }) => {
-  await new Promise((r) => setTimeout(r, 600));
-  // örnek dönüş
-  return {
-    id: 'DR-1',
-    name: 'Ahmet Kara', // <-- normalde API’den gelir
-    sicilNo,
-  };
-};
+import { authService } from '../api/authService';
 
 const GirisDr = ({ navigation }) => {
   const [sicilNo, setSicilNo] = useState('');
@@ -42,9 +33,7 @@ const GirisDr = ({ navigation }) => {
   };
 
   const isStrongPassword = (val) =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_\-+={}[\]|\\:;"'<>,.?/~`]).{8,}$/.test(
-      val
-    );
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_\-+={}[\]|\\:;"'<>,.?/~`]).{8,}$/.test(val);
 
   const sicilError = useMemo(() => {
     if (!sicilTouched) return '';
@@ -75,16 +64,30 @@ const GirisDr = ({ navigation }) => {
     try {
       setLoading(true);
 
-      const doctor = await loginDoctor({
-        sicilNo: sicilNo.trim(),
-        sifre,
+      const { data } = await authService.loginDoctor({
+        registrationNumber: sicilNo.trim(),
+        password: sifre,
       });
 
-      //  doctor bilgisini DoktorTabs’e taşı
+      // ✅ Backend’in döndürdüğüne göre doctor objesi çıkar
+      // (şimdilik elimizde sicilNo var, name gelirse ekleriz)
+      const doctor = {
+        registrationNumber: sicilNo.trim(),
+        ...(data?.user || data?.doctor || {}),
+      };
+
       navigation.replace('DoktorStack', {
         screen: 'DoktorTabs',
-        params: { doctor }, // <-- drAnaSayfa bunu kullanacak
+        params: { doctor },
       });
+    } catch (err) {
+      // Axios error yakalama
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Giriş başarısız.';
+      Alert.alert('Hata', msg);
     } finally {
       setLoading(false);
     }
@@ -168,11 +171,7 @@ const GirisDr = ({ navigation }) => {
           activeOpacity={0.8}
           disabled={!isFormValid || loading}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Giriş Yap</Text>
-          )}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Giriş Yap</Text>}
         </TouchableOpacity>
       </View>
 
